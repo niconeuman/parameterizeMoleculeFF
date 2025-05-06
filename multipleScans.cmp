@@ -1,0 +1,55 @@
+# Name: readData
+# Author: N.I. Neuman
+# *************************************** DESCRIPTION ***********************************************
+# This compound script loops over a series of relaxed surface scans
+# It is based on iterativeOptimization.cmp
+# ***************************************   DETAILS   ************************************************
+#
+# Step1: Single point PBE0/def2-SVP calculation
+#
+# ------ Variables to adjust (e.g. using 'with') -------------------
+Variable molecule ="initial.xyz";
+Variable charge = 0;
+Variable mult   = 1;
+Variable method          = "PBE0 D3 def2-SVP";
+Variable nScans       =  6;   # Number of maximum tries
+Variable myFilename      = "xyzInput.xyz";
+Variable scanArray[nScans];
+scanArray[0] = "%geom scan B 1 3 [1.1 1.2 1.3 1.4 1.5] end end";
+scanArray[1] = "%geom scan B 2 3 [1.1 1.2 1.3 1.4 1.5] end end";
+scanArray[2] = "%geom scan B 3 4 [1.2 1.3 1.4 1.5 1.6] end end";
+scanArray[3] = "%geom scan A 1 3 4 [91.4 101.4 111.4 121.4 131.4] end end";
+scanArray[4] = "%geom scan A 2 3 1 [102.5 112.5 122.5 132.5 142.5] end end";
+scanArray[5] = "%geom scan A 2 3 4 [106.1 116.1 126.1 136.1 146.1] end end";
+
+# ------------------------------------------------------------------
+# ------            Rest of variables            -------------------
+Geometry myGeom;
+
+# -----------------------------------------------------------
+# Perform a single point calculation. We need it for
+# the initial geometry from the property file
+# -----------------------------------------------------------
+New_Step
+  !&{method}
+  *xyzfile &{charge} &{mult} &{molecule}
+Step_End
+myGeom.Read();
+myGeom.WriteXYZFile(filename=myFilename);
+
+# -----------------------------------------------------------
+# Start a for loop over number of tries
+# ----------------------------------------------------------
+For istep From 1 To nScans Do
+  # --------------------------------------------
+  # Perform a geometry optimization calculation
+  # --------------------------------------------
+  New_Step
+    ! &{method} Opt Bohrs
+	&{scanArray[istep-1]}
+    *xyzfile &{charge} &{mult} &{myFilename}
+  Step_End
+  myGeom.Read();
+
+endfor
+end
